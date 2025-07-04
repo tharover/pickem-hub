@@ -1,35 +1,49 @@
 import { useEffect, useState } from 'react';
 
 export default function Leaderboard() {
-  const [entries, setEntries] = useState([]);
+  const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch('/leaderboard.json')
+    fetch('/data/leaderboard.json')
       .then(res => res.json())
-      .then(setEntries);
+      .then(json => {
+        // Optional: group and summarize by player
+        const grouped = summarize(json);
+        setData(grouped);
+      });
   }, []);
 
+  const summarize = (rows) => {
+    const totals = {};
+    rows.forEach(row => {
+      const key = row['Email'];
+      if (!totals[key]) totals[key] = { email: key, points: 0 };
+      totals[key].points += Number(row['Points'] || 0);
+    });
+    return Object.values(totals).sort((a, b) => b.points - a.points);
+  };
+
   return (
-    <section>
-      <h2>🏆 Leaderboard</h2>
-      {entries.length === 0 ? <p>Loading...</p> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th align="left">Player</th>
-              <th align="right">Score</th>
+    <div style={{ padding: '2rem' }}>
+      <h1>🏈 Weekly Leaderboard</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Total Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((player, index) => (
+            <tr key={player.email}>
+              <td>{index + 1}</td>
+              <td>{player.email}</td>
+              <td>{player.points.toFixed(1)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {entries.map(({ name, score }, i) => (
-              <tr key={i}>
-                <td>{name}</td>
-                <td align="right">{score}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
